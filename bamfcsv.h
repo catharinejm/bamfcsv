@@ -7,6 +7,11 @@ struct s_Row {
   char *cells[10];
 };
 
-struct s_Row *parse(const char*, int*);
+struct s_Parsed {
+  struct s_Row *rows;
+  int count;
+};
+
+struct s_Parsed *parse(const char*);
 
 #endif
