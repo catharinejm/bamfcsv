@@ -1,6 +1,8 @@
+*.o
+*.bundle
+*.dSYM
+a.out
 *~
 \#*
-*.dSYM
 *.csv*
 bamfcsv
-a.out
