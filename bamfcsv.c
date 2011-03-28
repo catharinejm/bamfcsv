@@ -9,7 +9,7 @@ struct s_Parsed *parse(const char *file) {
   int bufsize = 256;
   char *buf = calloc(bufsize, sizeof(char));
 
-  int rowcount = 1; // This is absurdly low just to test; make it bigger!
+  int rowcount = 256;
   struct s_Row *rows = calloc(rowcount, sizeof(struct s_Row));
   int line = 0;
 
@@ -23,11 +23,17 @@ struct s_Parsed *parse(const char *file) {
     rows[line].contents = calloc(strlen(buf)+1, sizeof(char));
     strcpy(rows[line].contents, buf);
 
+    int cellcount = 16;
+    rows[line].cells = calloc(cellcount, sizeof(char**));
     char **cell_p = rows[line].cells;
     int count = 0;
     while ((*cell_p = strsep(&rows[line].contents, ",")) != NULL) {
-      ++cell_p;
       ++count;
+      if (count == cellcount) {
+        cellcount *= 2;
+        rows[line].cells = realloc(rows[line].cells, cellcount*sizeof(char**));
+      }
+      cell_p = rows[line].cells + count;
     }
 
     rows[line].count = count;

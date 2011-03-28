@@ -15,7 +15,7 @@ VALUE do_the_parsing(VALUE self, VALUE file) {
     }
     rb_ary_push(ary, row);
   }
-  return rb_iv_set(self, "parsed_file", ary);
+  return rb_iv_set(self, "@parsed_file", ary);
 }
 
 void Init_test() {

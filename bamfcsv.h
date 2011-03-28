@@ -4,7 +4,7 @@
 struct s_Row {
   char *contents;
   int count;
-  char *cells[10];
+  char **cells;
 };
 
 struct s_Parsed {
