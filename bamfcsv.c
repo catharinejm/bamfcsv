@@ -10,15 +10,15 @@ typedef unsigned char bool;
 struct s_Parsed *parse(const char *file) {
   FILE *csv = fopen(file, "r"); 
 
-  int num_rows = 32;
+  int num_rows = BAMF_DFLT_ROWC;
   struct s_Row *rows = calloc(num_rows, sizeof(struct s_Row));
   struct s_Row *cur_row = rows;
 
-  int num_cells = 4;
+  int num_cells = BAMF_DFLT_CELLC;
   cur_row->cells = calloc(num_cells, sizeof(char**));
   char **cur_cell = cur_row->cells;
 
-  int cell_length = 64;
+  int cell_length = BAMF_DFLT_CLEN;
   *cur_cell = calloc(cell_length, sizeof(char));
   char *write_p = *cur_cell;
 
@@ -30,7 +30,14 @@ struct s_Parsed *parse(const char *file) {
 
     if ('\n' == cur_char) {
       cur_row->count = cellcount + 1;
-      ++cur_row; // TODO: Need overflow check (num_rows)
+      ++rowcount;
+      if (rowcount == num_rows) {
+        num_rows *= 2;
+        rows = realloc(rows, num_rows*sizeof(struct s_Row));
+        cur_row = rows + rowcount;
+      } else {
+        ++cur_row;
+      }
 
       cur_row->cells = calloc(num_cells, sizeof(char**));
       cur_cell = cur_row->cells;
@@ -38,13 +45,18 @@ struct s_Parsed *parse(const char *file) {
       *cur_cell = calloc(cell_length, sizeof(char));
       write_p = *cur_cell;
       cellcount = 0;
-
-      ++rowcount;
     } else if (',' == cur_char && !is_quoted) {
-      ++cur_cell; // TODO: Need overflow check (num_cells)
+      ++cellcount;
+      if (cellcount == num_cells) {
+        num_cells *= 2;
+        cur_row->cells = realloc(cur_row->cells, num_cells*sizeof(char**));
+        cur_cell = cur_row->cells + cellcount;
+      } else {
+        ++cur_cell;
+      }
+
       *cur_cell = calloc(cell_length, sizeof(char));
       write_p = *cur_cell;
-      ++cellcount;
     } else if ('"' == cur_char && !write_quote) {
       next_char = fgetc(csv);
 
@@ -57,6 +69,11 @@ struct s_Parsed *parse(const char *file) {
     } else {
       *write_p = cur_char;
       ++write_p; // TODO: Need overflow check (cell_length-1, Needs NULL termination)
+      if (*cur_cell + cell_length - 1 == write_p) {
+        cell_length *= 2;
+        *cur_cell = realloc(*cur_cell, cell_length*sizeof(char));
+        write_p = *cur_cell + cell_length/2 - 1;
+      }
       write_quote = false;
     }
   }
