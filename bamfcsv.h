@@ -2,9 +2,8 @@
 #define _BAMFCSV_H
 
 struct s_Row {
-  char *contents;
-  int count;
   char **cells;
+  int count;
 };
 
 struct s_Parsed {
