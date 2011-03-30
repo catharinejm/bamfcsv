@@ -3,7 +3,7 @@
 
 #define BAMF_DFLT_ROWC 32
 #define BAMF_DFLT_CELLC 4
-#define BAMF_DFLT_CLEN 64
+#define BAMF_DFLT_CLEN 128
 
 struct s_Row {
   char **cells;

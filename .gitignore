@@ -6,3 +6,4 @@ a.out
 \#*
 *.csv*
 ctest/main
+Makefile

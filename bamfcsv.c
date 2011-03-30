@@ -68,7 +68,7 @@ struct s_Parsed *parse(const char *file) {
       ungetc(next_char, csv);
     } else {
       *write_p = cur_char;
-      ++write_p; // TODO: Need overflow check (cell_length-1, Needs NULL termination)
+      ++write_p;
       if (*cur_cell + cell_length - 1 == write_p) {
         cell_length *= 2;
         *cur_cell = realloc(*cur_cell, cell_length*sizeof(char));
