@@ -15,6 +15,16 @@ struct s_Parsed {
   int count;
 };
 
+int count_newlines(char *buf, int bufsize);
+
+int *count_cells(char *buf, int bufsize, int lines);
+
+VALUE mm_parse(const char *file);
+
 struct s_Parsed *parse(const char*);
+
+VALUE do_the_parsing(VALUE self, VALUE file);
+
+void Init_bamfcsv();
 
 #endif

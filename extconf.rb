@@ -1,2 +1,2 @@
 require 'mkmf'
-create_makefile('test')
+create_makefile('bamfcsv')
