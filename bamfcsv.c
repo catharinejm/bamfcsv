@@ -44,15 +44,21 @@ VALUE build_matrix(char *buf, int bufsize, int lines, int *cell_map) {
   int cur_cell = 0;
   VALUE matrix = rb_ary_new2(lines);
   VALUE row = rb_ary_new2(cell_map[0]);
+  VALUE new_string;
   int i;
-  for (i = 0; i< lines; i++) {
+  for (i = 0; i< bufsize; i++) {
     if (buf[i] == ',') {
-      rb_ary_store(row,cur_cell,rb_str_new(buf+str_start, i-str_start));
+      new_string = rb_str_new(buf+str_start, i-str_start);
+      rb_ary_store(row,cur_cell,new_string);
       cur_cell++;
       str_start = i+1;
     }
-    if (buf[i] = '\n') {
+    if (buf[i] == '\n') {
+      new_string = rb_str_new(buf+str_start, i-str_start);
+      rb_ary_store(row,cur_cell,new_string);
+      str_start = i+1;
       rb_ary_store(matrix, cur_line, row);
+      row = rb_ary_new2(cell_map[cur_line]);
       cur_cell = 0;
       cur_line++;
     }
@@ -72,9 +78,6 @@ VALUE mm_parse(const char *file) {
   mmapped_csv = (char*) mmap(0, filesize, PROT_READ, MAP_SHARED, csv, 0);
   newlines = count_newlines(mmapped_csv,filesize);
   cell_counts = count_cells(mmapped_csv,filesize,newlines);
-  for (i = 0; i < newlines; i++) {
-    printf("line %d cells: %d", i, cell_counts[i]);
-  }
   VALUE matrix = build_matrix(mmapped_csv,filesize,newlines,cell_counts);
   munmap(mmapped_csv, filesize);
   close(csv);
