@@ -4,81 +4,112 @@
 #include <sys/mman.h>
 #include "bamfcsv.h"
 
-#define true 1
-#define false 0
-typedef unsigned char bool;
+struct s_Row *alloc_row() {
 
-int count_newlines(char *buf, int bufsize) {
-  int newlines = 0;
-  int i;
-  for(i = 0; i < bufsize; i++) {
-    if (buf[i] == '\n') {
-      newlines++;
-    }
-  }
-  return newlines;
+  struct s_Row *new_row = malloc(sizeof(struct s_Row));
+
+  new_row -> first_cell = 0;
+  new_row -> next_row = 0;
+  new_row -> cell_count = 0;
+
 }
 
-int *count_cells(char *buf, int bufsize, int lines) {
-  int cur_line_count = 1;
-  int cur_line = 0;
-  int i = 0;
-  int *cell_map;
-  cell_map = calloc(lines, sizeof(int));
-  for (i = 0; i < bufsize; i++) {
-    if (buf[i] == ',') {
-      cur_line_count++;
-    }
-    if (buf[i] == '\n') {
-      cell_map[cur_line] = cur_line_count;
-      cur_line++;
-      cur_line_count = 1;
-    }
-  }
-  return cell_map;        
+struct s_Cell *alloc_cell() {
+
+  struct s_Cell *new_cell = malloc(sizeof(struct s_Cell));
+
+  new_cell -> start = 0;
+  new_cell -> len = 0;
+  new_cell -> next_cell = 0;
+
 }
 
-VALUE build_matrix(char *buf, int bufsize, int lines, int *cell_map) {
+void free_cell(struct s_Cell *cell) {
+  free_cell(cell->next_cell);
+  free(cell);
+}
+
+void free_row(struct s_Row *row) {
+  free_row(row->next_row);
+  free_cell(row->first_cell);
+  free(row);
+}
+
+VALUE build_matrix(char *buf, int bufsize) {
+
   int str_start = 0;
-  int cur_line = 0;
-  int cur_cell = 0;
-  VALUE matrix = rb_ary_new2(lines);
-  VALUE row = rb_ary_new2(cell_map[0]);
+  int num_rows = 1;
+
+  struct s_Row *first_row = alloc_row();
+  struct s_Row *cur_row = first_row;
+  struct s_Cell *cur_cell = alloc_cell();
+  first_row->first_cell = cur_cell;
+  cur_cell->start = buf;
+
+  VALUE matrix;
+  VALUE row;
   VALUE new_string;
-  int i;
-  for (i = 0; i< bufsize; i++) {
+  int i,j;
+
+  for (i = 0; i < bufsize; i++) {
+
     if (buf[i] == ',') {
-      new_string = rb_str_new(buf+str_start, i-str_start);
-      rb_ary_store(row,cur_cell,new_string);
-      cur_cell++;
-      str_start = i+1;
+
+        cur_cell->len = buf+i-(cur_cell->start);
+        cur_cell->next_cell = alloc_cell();
+        cur_cell = cur_cell->next_cell;
+        cur_cell->start = buf+i+1;
+        cur_row->cell_count += 1;
+
     }
+
     if (buf[i] == '\n') {
-      new_string = rb_str_new(buf+str_start, i-str_start);
-      rb_ary_store(row,cur_cell,new_string);
-      str_start = i+1;
-      rb_ary_store(matrix, cur_line, row);
-      row = rb_ary_new2(cell_map[cur_line]);
-      cur_cell = 0;
-      cur_line++;
+
+      if (buf[i-1] == '\r') 
+        cur_cell->len = buf+i-(cur_cell->start-1);
+      else
+        cur_cell->len = buf+i-(cur_cell->start);
+
+      cur_row->cell_count += 1;
+      cur_row->next_row = alloc_row();
+      cur_row->first_cell = alloc_cell();
+      cur_cell = cur_row->first_cell;
+      cur_cell->start = buf+i+1;
+      num_rows++;
+
     }
   }
+  
+  if (cur_row->cell_count == 0) {
+    num_rows--;
+  }
+
+  cur_row = first_row;
+  matrix = rb_ary_new2(num_rows);
+
+  for (i = 0; i < num_rows; i++) {
+    cur_cell = cur_row->first_cell;
+    row = rb_ary_new2(cur_row->cell_count);
+    rb_ary_store(matrix,i,row);
+    for (j = 0; j < cur_row->cell_count; j++) {
+      new_string = rb_str_new(cur_cell->start, cur_cell->len);
+      rb_ary_store(row, j, new_string);
+      cur_cell = cur_cell->next_cell;
+    }
+    cur_row = cur_row->next_row;
+  }
+
+  free_row(first_row);
   return matrix;
 }
 
 VALUE mm_parse(const char *file) {
-  int csv;
   char *mmapped_csv;
-  int newlines;
-  int filesize;
-  int *cell_counts;
-  int i;
+  int filesize, csv;
   csv = open(file, O_RDONLY);
   filesize = lseek(csv, 0, SEEK_END);
   mmapped_csv = (char*) mmap(0, filesize, PROT_READ, MAP_SHARED, csv, 0);
-  newlines = count_newlines(mmapped_csv,filesize);
-  cell_counts = count_cells(mmapped_csv,filesize,newlines);
-  VALUE matrix = build_matrix(mmapped_csv,filesize,newlines,cell_counts);
+  VALUE matrix = build_matrix(mmapped_csv,filesize);
   munmap(mmapped_csv, filesize);
   close(csv);
   return matrix;
