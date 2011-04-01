@@ -1,3 +1,12 @@
-BAMF,CSV,parser
-OHHH,YEAH,there,are,so
-MANy,cahrs,in,here.
+BAMFCSV -- Parsin' CSVs like a BAMF!
+
+$ gem install bamfcsv
+$ irb -rbamfcsv
+irb> BAMFCSV.read "super_giant_properly_formatted.csv"
+
+BAMF!!! CSV IS PARSED IN LESS THAN ONE SECOND! GUARANTEED!*
+
+
+
+
+* Results may vary.
