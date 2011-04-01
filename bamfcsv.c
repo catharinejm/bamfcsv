@@ -63,8 +63,11 @@ VALUE build_matrix_from_pointer_tree(struct s_Row *first_row, int num_rows) {
     row = rb_ary_new2(cur_row->cell_count);
     rb_ary_store(matrix,i,row);
     for (j = 0; j < cur_row->cell_count; j++) {
-
-      new_string = rb_str_new(cur_cell->start, cur_cell->len);
+      if (*(cur_cell->start) == '"' 
+          && *((cur_cell->start)+((cur_cell->len-1)*sizeof(char))) == '"')
+        new_string = rb_str_new(cur_cell->start+sizeof(char), cur_cell->len-(sizeof(char)*2));
+      else
+        new_string = rb_str_new(cur_cell->start, cur_cell->len);
       rb_ary_store(row, j, new_string);
       cur_cell = cur_cell->next_cell;
     }
@@ -98,31 +101,35 @@ VALUE build_matrix(char *buf, int bufsize) {
         in_quote = 1;
     }
 
-    if (*cur == ',' && !in_quote) {
+    if (!in_quote) {
 
+      if (*cur == ',') {
+        
         cur_cell->len = cur-(cur_cell->start);
         cur_cell->next_cell = alloc_cell();
         cur_cell = cur_cell->next_cell;
         cur_cell->start = cur+sizeof(char);
         cur_row->cell_count += 1;
-
-    }
-
-    if (*cur == '\n') {
-
-      if (*(cur-sizeof(char)) == '\r') 
-        cur_cell->len = cur-(cur_cell->start)-sizeof(char);
-      else
-        cur_cell->len = cur-(cur_cell->start);
-
-      cur_row->cell_count += 1;
-      cur_row->next_row = alloc_row();
-      cur_row = cur_row -> next_row;
-      cur_row->first_cell = alloc_cell();
-      cur_cell = cur_row->first_cell;
-      cur_cell->start = cur+sizeof(char);
-      num_rows++;
-
+        
+      }
+      
+      if (*cur == '\n') {
+        
+        if (*(cur-sizeof(char)) == '\r') 
+          cur_cell->len = cur-(cur_cell->start)-sizeof(char);
+        else
+          cur_cell->len = cur-(cur_cell->start);
+        
+        cur_row->cell_count += 1;
+        cur_row->next_row = alloc_row();
+        cur_row = cur_row -> next_row;
+        cur_row->first_cell = alloc_cell();
+        cur_cell = cur_row->first_cell;
+        cur_cell->start = cur+sizeof(char);
+        num_rows++;
+        
+      }
+      
     }
 
   }
