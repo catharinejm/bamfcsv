@@ -19,4 +19,8 @@ Gem::Specification.new do |s|
   s.executables   = `git ls-files -- bin/*`.split("\n").map{ |f| File.basename(f) }
   s.require_paths = ["lib", "ext"]
   s.extensions = %w{ext/bamfcsv/extconf.rb}
+
+  s.add_development_dependency "rspec", "~> 2.5.0"
+  s.add_development_dependency "fuubar", "~> 0.0.2"
+  s.add_development_dependency 'rake-compiler', "~> 0.7.1"
 end
