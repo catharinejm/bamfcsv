@@ -13,10 +13,6 @@ struct s_Cell {
   struct s_Cell *next_cell;
 };
 
-VALUE mm_parse(const char *file);
-
-VALUE do_the_parsing(VALUE self, VALUE file);
-
 void Init_bamfcsv();
 
 #endif

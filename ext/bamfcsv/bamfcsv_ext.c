@@ -98,10 +98,7 @@ VALUE build_matrix(char *buf, int bufsize) {
   for (cur = buf; cur < buf+bufsize; cur++) {
 
     if (*cur == '"') {
-      if (in_quote)
-        in_quote = 0;
-      else
-        in_quote = 1;
+      in_quote = !in_quote;
     }
 
     if (!in_quote) {
@@ -166,7 +163,7 @@ VALUE mm_parse(const char *file) {
   return matrix;
 }
 
-VALUE do_the_parsing(VALUE self, VALUE file) {
+VALUE read_path(VALUE self, VALUE file) {
 
   return mm_parse(RSTRING_PTR(file));
 
@@ -175,6 +172,6 @@ VALUE do_the_parsing(VALUE self, VALUE file) {
 void Init_bamfcsv() {
 
   VALUE module = rb_define_module("BAMFCSV");
-  rb_define_module_function(module, "parse", do_the_parsing, 1);
+  rb_define_module_function(module, "read_path", read_path, 1);
 
 }
