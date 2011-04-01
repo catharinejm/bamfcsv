@@ -30,19 +30,22 @@ struct s_Cell *alloc_cell() {
 
 void free_cell(struct s_Cell *cell) {
 
-  if (cell -> next_cell != 0)
+  if (cell != 0) {
     free_cell(cell->next_cell);
-  free(cell);
+    free(cell);
+  }
 
 }
 
 void free_row(struct s_Row *row) {
 
-  if (row->next_row != 0) 
+  if (row != 0) {
+
     free_row(row->next_row);
-  if (row->first_cell != 0)
     free_cell(row->first_cell);
-  free(row);
+    free(row);
+
+  }
 
 }
 

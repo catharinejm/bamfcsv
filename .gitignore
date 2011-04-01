@@ -2,8 +2,8 @@
 *.bundle
 *.dSYM
 a.out
+*.so
 *~
 \#*
 *.csv*
-ctest/main
 Makefile
