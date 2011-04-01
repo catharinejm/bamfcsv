@@ -27,7 +27,7 @@ describe BAMFCSV do
     end
 
     it "escapes cells that are quoted" do
-      BAMFCSV.read("spec/fixtures/double-quotes.csv").should == [["this is a semicolon:", " ;"], ["this is a comma:", " ,"], ["this is quote:", " \""]]
+      BAMFCSV.read("spec/fixtures/double-quotes.csv").should == [["this is a semicolon:", " ;"], ["this is a comma:", " ,"], ["this is a quote:", " \""]]
     end
 
     it "doesn't create a row when the file terminates with [CR]LF" do

@@ -23,6 +23,7 @@ struct s_Cell *alloc_cell() {
   new_cell -> start = 0;
   new_cell -> len = 0;
   new_cell -> next_cell = 0;
+  new_cell -> has_quotes = 0;
 
   return new_cell;
 
@@ -60,6 +61,9 @@ VALUE build_matrix_from_pointer_tree(struct s_Row *first_row, int num_rows) {
   cur_row = first_row;
   matrix = rb_ary_new2(num_rows);
 
+  ID gsub = rb_intern("gsub!");
+  VALUE dquote = rb_str_new2("\"\""), quote = rb_str_new2("\"");
+
   for (i = 0; i < num_rows; i++) {
 
     cur_cell = cur_row->first_cell;
@@ -71,6 +75,9 @@ VALUE build_matrix_from_pointer_tree(struct s_Row *first_row, int num_rows) {
         new_string = rb_str_new(cur_cell->start+sizeof(char), cur_cell->len-(sizeof(char)*2));
       else
         new_string = rb_str_new(cur_cell->start, cur_cell->len);
+      if (cur_cell->has_quotes) {
+        rb_funcall(new_string, gsub, 2, dquote, quote);
+      }
       rb_ary_store(row, j, new_string);
       cur_cell = cur_cell->next_cell;
     }
@@ -78,6 +85,13 @@ VALUE build_matrix_from_pointer_tree(struct s_Row *first_row, int num_rows) {
   }
 
   return matrix;
+}
+
+void finalize_cell(struct s_Cell *cell, char *cur) {
+  if (*(cur-sizeof(char)) == '\r') 
+    cell->len = cur-(cell->start)-sizeof(char);
+  else
+    cell->len = cur-(cell->start);
 }
 
 VALUE build_matrix(char *buf, int bufsize) {
@@ -98,6 +112,9 @@ VALUE build_matrix(char *buf, int bufsize) {
   for (cur = buf; cur < buf+bufsize; cur++) {
 
     if (*cur == '"') {
+      if (in_quote)
+        if (*(cur+1) != ',')
+          cur_cell->has_quotes = 1;
       in_quote = !in_quote;
     }
 
@@ -105,29 +122,26 @@ VALUE build_matrix(char *buf, int bufsize) {
 
       if (*cur == ',') {
         
-        cur_cell->len = cur-(cur_cell->start);
+        finalize_cell(cur_cell,cur);
         cur_cell->next_cell = alloc_cell();
         cur_cell = cur_cell->next_cell;
         cur_cell->start = cur+sizeof(char);
         cur_row->cell_count += 1;
-        
+
       }
       
       if (*cur == '\n') {
         
-        if (*(cur-sizeof(char)) == '\r') 
-          cur_cell->len = cur-(cur_cell->start)-sizeof(char);
-        else
-          cur_cell->len = cur-(cur_cell->start);
-        
+        finalize_cell(cur_cell,cur);
         cur_row->cell_count += 1;
         cur_row->next_row = alloc_row();
         cur_row = cur_row -> next_row;
         cur_row->first_cell = alloc_cell();
         cur_cell = cur_row->first_cell;
         cur_cell->start = cur+sizeof(char);
-        num_rows++;
         
+        num_rows++;
+
       }
       
     }

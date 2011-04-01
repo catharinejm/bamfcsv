@@ -10,6 +10,7 @@ struct s_Row {
 struct s_Cell {
   char *start;
   int len;
+  int has_quotes;
   struct s_Cell *next_cell;
 };
 
