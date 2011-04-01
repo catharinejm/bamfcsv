@@ -2,7 +2,7 @@
 #include <ruby/ruby.h>
 #include <fcntl.h>
 #include <sys/mman.h>
-#include "bamfcsv.h"
+#include "bamfcsv_ext.h"
 
 struct s_Row *alloc_row() {
 

@@ -1,5 +1,5 @@
-#ifndef _BAMFCSV_H
-#define _BAMFCSV_H
+#ifndef _BAMFCSV_EXT_H
+#define _BAMFCSV_EXT_H
 
 struct s_Row {
   struct s_Cell *first_cell;
