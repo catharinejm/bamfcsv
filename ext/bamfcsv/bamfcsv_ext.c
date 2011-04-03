@@ -177,15 +177,23 @@ VALUE mm_parse(const char *file) {
   return matrix;
 }
 
-VALUE read_path(VALUE self, VALUE file) {
+VALUE parse_file_from_path(VALUE self, VALUE file) {
 
   return mm_parse(RSTRING_PTR(file));
 
 }
 
+VALUE parse_string(VALUE self, VALUE string) {
+
+  return build_matrix(RSTRING_PTR(string), NUM2INT(rb_str_length(string)));
+
+}
+
 void Init_bamfcsv() {
 
-  VALUE module = rb_define_module("BAMFCSV");
-  rb_define_module_function(module, "read_path", read_path, 1);
+  VALUE bamfcsv_module = rb_define_module("BAMFCSV");
+  VALUE bamfcsv_singleton_class = rb_singleton_class(bamfcsv_module);
+  rb_define_private_method(bamfcsv_singleton_class, "__parse_file_from_path", parse_file_from_path, 1);
+  rb_define_private_method(bamfcsv_singleton_class, "__parse_string", parse_string, 1);
 
 }
