@@ -1,8 +1,12 @@
 require 'spec_helper'
 
 describe BAMFCSV do
-  it "has a parse method" do
+  it "has a read method" do
     BAMFCSV.should respond_to(:read)
+  end
+
+  it "has a parse method" do
+    BAMFCSV.should respond_to(:parse)
   end
 
   describe "#read" do
@@ -44,6 +48,22 @@ describe BAMFCSV do
       expect do
         BAMFCSV.read("spec/fixtures/")
       end.should raise_error Errno::EISDIR
+    end
+  end
+
+  describe "#parse" do
+    it "correctly parses the last cell even if there is no newline" do
+      BAMFCSV.parse("1,2").should == [["1","2"]]
+    end
+
+    describe "default CSV module compatibility" do
+      it "adds a nil cell after a trailing comma with no newline" do
+        BAMFCSV.parse("1,2,").should == [["1","2",nil]]
+      end
+
+      it "adds a nil cell after a trailing comma with an ending newline" do
+        BAMFCSV.parse("1,2,\n").should == [["1","2",nil]]
+      end
     end
   end
 end
