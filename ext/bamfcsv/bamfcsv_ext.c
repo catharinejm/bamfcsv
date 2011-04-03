@@ -1,6 +1,4 @@
 #include <stdlib.h>
-#include <fcntl.h>
-#include <sys/mman.h>
 #include "bamfcsv_ext.h"
 
 struct s_Row *alloc_row() {
@@ -183,29 +181,6 @@ VALUE build_matrix(char *buf, int bufsize) {
 
 }
 
-VALUE mm_parse(const char *file) {
-
-  char *mmapped_csv;
-  int filesize, csv;
-
-  csv = open(file, O_RDONLY);
-  filesize = lseek(csv, 0, SEEK_END);
-  mmapped_csv = (char*) mmap(0, filesize, PROT_READ, MAP_SHARED, csv, 0);
-
-  VALUE matrix = build_matrix(mmapped_csv,filesize);
-
-  munmap(mmapped_csv, filesize);
-  close(csv);
-
-  return matrix;
-}
-
-VALUE parse_file_from_path(VALUE self, VALUE file) {
-
-  return mm_parse(RSTRING_PTR(file));
-
-}
-
 VALUE parse_string(VALUE self, VALUE string) {
 
   return build_matrix(RSTRING_PTR(string), NUM2INT(rb_str_length(string)));
@@ -216,7 +191,6 @@ void Init_bamfcsv() {
 
   BAMFCSV_module = rb_define_module("BAMFCSV");
   VALUE bamfcsv_singleton_class = rb_singleton_class(BAMFCSV_module);
-  rb_define_private_method(bamfcsv_singleton_class, "__parse_file_from_path", parse_file_from_path, 1);
   rb_define_private_method(bamfcsv_singleton_class, "__parse_string", parse_string, 1);
 
   BAMFCSV_MalformedCSVError_class = rb_define_class_under(BAMFCSV_module, "MalformedCSVError", rb_eRuntimeError);
