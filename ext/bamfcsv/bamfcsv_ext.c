@@ -102,7 +102,7 @@ void finalize_cell(struct s_Cell *cell, char *cur, int quote_count) {
 VALUE build_matrix(char *buf, int bufsize) {
   int str_start = 0;
   int num_rows = 1;
-  int quote_count = 0, quotes_matched = 0;
+  int quote_count = 0, quotes_matched = 1;
 
   struct s_Row *first_row = alloc_row();
   struct s_Row *cur_row = first_row;
@@ -116,14 +116,14 @@ VALUE build_matrix(char *buf, int bufsize) {
   
   for (cur = buf; cur < buf+bufsize; cur++) {
 
-    int quotes_matched = !(quote_count & 1); /* count is even */
-
     if (*cur == '"') {
       if (0 == quote_count && cur_cell->start != cur)
         rb_raise(BAMFCSV_MalformedCSVError_class, "Illegal quoting on line %d.", num_rows);
       else
         ++quote_count;
     }
+
+    quotes_matched = !(quote_count & 1); /* count is even */
 
     if (quotes_matched) { 
 
@@ -157,7 +157,9 @@ VALUE build_matrix(char *buf, int bufsize) {
 
   }
 
-  if (cur_row->cell_count == 0) { /* Ended with newline */
+  if (!quotes_matched)
+    rb_raise(BAMFCSV_MalformedCSVError_class, "Illegal quoting on line %d.", num_rows);
+  else if (cur_row->cell_count == 0) { /* Ended with newline */
     num_rows--;
   } else { /* No newline before EOF */
     finalize_cell(cur_cell, cur, quote_count);

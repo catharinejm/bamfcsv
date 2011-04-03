@@ -81,8 +81,13 @@ describe BAMFCSV do
         expect { BAMFCSV.parse(' ""') }.should raise_error(BAMFCSV::MalformedCSVError)
       end
 
-      it "raises BAMFCSV::MalformedCSVError when a quoted cell is not closed at its end"
-      it "raises BAMFCSV::MalformedCSVError when quoted cell is closed before its end"
+      it "raises BAMFCSV::MalformedCSVError when a quoted cell is not closed at its end" do
+        expect { BAMFCSV.parse('"') }.should raise_error(BAMFCSV::MalformedCSVError)
+      end
+
+      it "raises BAMFCSV::MalformedCSVError when quoted cell is closed before its end" do
+        expect { BAMFCSV.parse('"" ') }.should raise_error(BAMFCSV::MalformedCSVError)
+      end
     end
   end
 end
