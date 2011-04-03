@@ -71,8 +71,8 @@ VALUE build_matrix_from_pointer_tree(struct s_Row *first_row, int num_rows) {
     rb_ary_store(matrix,i,row);
     for (j = 0; j < cur_row->cell_count; j++) {
       if (*(cur_cell->start) == '"' 
-          && *((cur_cell->start)+((cur_cell->len-1)*sizeof(char))) == '"')
-        new_string = rb_str_new(cur_cell->start+sizeof(char), cur_cell->len-(sizeof(char)*2));
+          && *((cur_cell->start)+(cur_cell->len-1)) == '"')
+        new_string = rb_str_new(cur_cell->start+1, cur_cell->len-2);
       else
         new_string = rb_str_new(cur_cell->start, cur_cell->len);
       if (cur_cell->has_quotes) {
@@ -88,8 +88,8 @@ VALUE build_matrix_from_pointer_tree(struct s_Row *first_row, int num_rows) {
 }
 
 void finalize_cell(struct s_Cell *cell, char *cur) {
-  if (*(cur-sizeof(char)) == '\r') 
-    cell->len = cur-(cell->start)-sizeof(char);
+  if (*(cur-1) == '\r') 
+    cell->len = cur-(cell->start)-1;
   else
     cell->len = cur-(cell->start);
 }
@@ -125,7 +125,7 @@ VALUE build_matrix(char *buf, int bufsize) {
         finalize_cell(cur_cell,cur);
         cur_cell->next_cell = alloc_cell();
         cur_cell = cur_cell->next_cell;
-        cur_cell->start = cur+sizeof(char);
+        cur_cell->start = cur+1;
         cur_row->cell_count += 1;
 
       }
@@ -138,7 +138,7 @@ VALUE build_matrix(char *buf, int bufsize) {
         cur_row = cur_row -> next_row;
         cur_row->first_cell = alloc_cell();
         cur_cell = cur_row->first_cell;
-        cur_cell->start = cur+sizeof(char);
+        cur_cell->start = cur+1;
         
         num_rows++;
 
