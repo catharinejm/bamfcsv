@@ -79,14 +79,28 @@ describe BAMFCSV do
 
       it "raises BAMFCSV::MalformedCSVError when quotes appear in a cell which was not started with quotes" do
         expect { BAMFCSV.parse(' ""') }.should raise_error(BAMFCSV::MalformedCSVError)
+        expect { BAMFCSV.parse(" \"\"\n") }.should raise_error(BAMFCSV::MalformedCSVError)
+        expect { BAMFCSV.parse(" \"\"\r\n") }.should raise_error(BAMFCSV::MalformedCSVError)
+        expect { BAMFCSV.parse('1, "",3') }.should raise_error(BAMFCSV::MalformedCSVError)
       end
 
       it "raises BAMFCSV::MalformedCSVError when a quoted cell is not closed at its end" do
         expect { BAMFCSV.parse('"') }.should raise_error(BAMFCSV::MalformedCSVError)
+        expect { BAMFCSV.parse('" ""') }.should raise_error(BAMFCSV::MalformedCSVError)
+        expect { BAMFCSV.parse("\"\n") }.should raise_error(BAMFCSV::MalformedCSVError)
+        expect { BAMFCSV.parse("\"\r\n") }.should raise_error(BAMFCSV::MalformedCSVError)
+        expect { BAMFCSV.parse("\" \"\"\n") }.should raise_error(BAMFCSV::MalformedCSVError)
+        expect { BAMFCSV.parse("\" \"\"\r\n") }.should raise_error(BAMFCSV::MalformedCSVError)
+        expect { BAMFCSV.parse('1,"2,3') }.should raise_error(BAMFCSV::MalformedCSVError)
+        expect { BAMFCSV.parse("1,\"2,3\n") }.should raise_error(BAMFCSV::MalformedCSVError)
+        expect { BAMFCSV.parse("1,\"2,3\r\n") }.should raise_error(BAMFCSV::MalformedCSVError)
       end
 
       it "raises BAMFCSV::MalformedCSVError when quoted cell is closed before its end" do
         expect { BAMFCSV.parse('"" ') }.should raise_error(BAMFCSV::MalformedCSVError)
+        expect { BAMFCSV.parse("\"\" \n") }.should raise_error(BAMFCSV::MalformedCSVError)
+        expect { BAMFCSV.parse("\"\" \r\n") }.should raise_error(BAMFCSV::MalformedCSVError)
+        expect { BAMFCSV.parse('1,"" ,2') }.should raise_error(BAMFCSV::MalformedCSVError)
       end
     end
   end

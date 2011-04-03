@@ -117,7 +117,7 @@ VALUE build_matrix(char *buf, int bufsize) {
   for (cur = buf; cur < buf+bufsize; cur++) {
 
     if (*cur == '"') {
-      if (0 == quote_count && cur_cell->start != cur)
+      if (0 == quote_count && cur_cell->start != cur) /* Quotes begin past opening of cell */
         rb_raise(BAMFCSV_MalformedCSVError_class, "Illegal quoting on line %d.", num_rows);
       else
         ++quote_count;
@@ -129,6 +129,9 @@ VALUE build_matrix(char *buf, int bufsize) {
 
       if (*cur == ',') {
         
+        if (quote_count && *(cur-1) != '"')
+          rb_raise(BAMFCSV_MalformedCSVError_class, "Unclosed quoted field on line %d.", num_rows);
+
         finalize_cell(cur_cell,cur,quote_count);
         cur_cell->next_cell = alloc_cell();
         cur_cell = cur_cell->next_cell;
@@ -140,6 +143,10 @@ VALUE build_matrix(char *buf, int bufsize) {
       
       if (*cur == '\n') {
         
+        if (quote_count)
+          if (*(cur-1) != '"' || *(cur-1) == '\r' && *(cur-2) != '"')
+            rb_raise(BAMFCSV_MalformedCSVError_class, "Unclosed quoted field on line %d.", num_rows);
+
         finalize_cell(cur_cell,cur,quote_count);
         cur_row->cell_count += 1;
         cur_row->next_row = alloc_row();
@@ -157,9 +164,12 @@ VALUE build_matrix(char *buf, int bufsize) {
 
   }
 
-  if (!quotes_matched)
+  if (!quotes_matched) /* Reached EOF without matching quotes */
     rb_raise(BAMFCSV_MalformedCSVError_class, "Illegal quoting on line %d.", num_rows);
-  else if (cur_row->cell_count == 0) { /* Ended with newline */
+  else if (quote_count && *cur != '"')
+    rb_raise(BAMFCSV_MalformedCSVError_class, "Unclosed quoted field on line %d.", num_rows);
+
+  if (cur_row->cell_count == 0) { /* Ended with newline */
     num_rows--;
   } else { /* No newline before EOF */
     finalize_cell(cur_cell, cur, quote_count);
