@@ -23,7 +23,7 @@ describe BAMFCSV do
     end
 
     it "interprets empty cells correctly" do
-      BAMFCSV.read("spec/fixtures/bamf-comma-comma.csv").should == [["BAMF","","CSV"]]
+      BAMFCSV.read("spec/fixtures/bamf-comma-comma.csv").should == [["BAMF",nil,"CSV"]]
     end
 
     it "escapes cells that are quoted" do
@@ -56,6 +56,18 @@ describe BAMFCSV do
       BAMFCSV.parse("1,2").should == [["1","2"]]
     end
 
+    it 'correctly escaptes ""' do
+      BAMFCSV.parse("1,\"\"2\"\"\n").should == [["1", '"2"']]
+    end
+
+    it "parses unquoted empty cells as nil" do
+      BAMFCSV.parse("1,,2").should == [["1",nil,"2"]]
+    end
+
+    it 'parses quoted empty cells as ""' do
+      BAMFCSV.parse("1,\"\",2").should == [["1","","2"]]
+    end
+
     describe "default CSV module compatibility" do
       it "adds a nil cell after a trailing comma with no newline" do
         BAMFCSV.parse("1,2,").should == [["1","2",nil]]
@@ -64,6 +76,13 @@ describe BAMFCSV do
       it "adds a nil cell after a trailing comma with an ending newline" do
         BAMFCSV.parse("1,2,\n").should == [["1","2",nil]]
       end
+
+      it "raises BAMFCSV::MalformedCSVError when quotes appear in a cell which was not started with quotes" do
+        expect { BAMFCSV.parse(' ""') }.should raise_error(BAMFCSV::MalformedCSVError)
+      end
+
+      it "raises BAMFCSV::MalformedCSVError when a quoted cell is not closed at its end"
+      it "raises BAMFCSV::MalformedCSVError when quoted cell is closed before its end"
     end
   end
 end

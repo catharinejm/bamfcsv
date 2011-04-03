@@ -1,5 +1,4 @@
 #include <stdlib.h>
-#include <ruby/ruby.h>
 #include <fcntl.h>
 #include <sys/mman.h>
 #include "bamfcsv_ext.h"
@@ -73,8 +72,12 @@ VALUE build_matrix_from_pointer_tree(struct s_Row *first_row, int num_rows) {
       if (*(cur_cell->start) == '"' 
           && *((cur_cell->start)+(cur_cell->len-1)) == '"')
         new_string = rb_str_new(cur_cell->start+1, cur_cell->len-2);
-      else
-        new_string = rb_str_new(cur_cell->start, cur_cell->len);
+      else {
+        if (cur_cell->len)
+          new_string = rb_str_new(cur_cell->start, cur_cell->len);
+        else
+          new_string = Qnil; /* Empty, unquoted cells are nil, for default ruby CSV compatibility */
+      }
       if (cur_cell->has_quotes) {
         rb_funcall(new_string, gsub, 2, dquote, quote);
       }
@@ -87,17 +90,19 @@ VALUE build_matrix_from_pointer_tree(struct s_Row *first_row, int num_rows) {
   return matrix;
 }
 
-void finalize_cell(struct s_Cell *cell, char *cur) {
+void finalize_cell(struct s_Cell *cell, char *cur, int quote_count) {
   if (*(cur-1) == '\r') 
     cell->len = cur-(cell->start)-1;
   else
     cell->len = cur-(cell->start);
+
+  if (quote_count) cell->has_quotes = 1;
 }
 
 VALUE build_matrix(char *buf, int bufsize) {
   int str_start = 0;
   int num_rows = 1;
-  int in_quote = 0;
+  int quote_count = 0, quotes_matched = 0;
 
   struct s_Row *first_row = alloc_row();
   struct s_Row *cur_row = first_row;
@@ -111,34 +116,38 @@ VALUE build_matrix(char *buf, int bufsize) {
   
   for (cur = buf; cur < buf+bufsize; cur++) {
 
+    int quotes_matched = !(quote_count & 1); /* count is even */
+
     if (*cur == '"') {
-      if (in_quote)
-        if (*(cur+1) != ',')
-          cur_cell->has_quotes = 1;
-      in_quote = !in_quote;
+      if (0 == quote_count && cur_cell->start != cur)
+        rb_raise(BAMFCSV_MalformedCSVError_class, "Illegal quoting on line %d.", num_rows);
+      else
+        ++quote_count;
     }
 
-    if (!in_quote) {
+    if (quotes_matched) { 
 
       if (*cur == ',') {
         
-        finalize_cell(cur_cell,cur);
+        finalize_cell(cur_cell,cur,quote_count);
         cur_cell->next_cell = alloc_cell();
         cur_cell = cur_cell->next_cell;
         cur_cell->start = cur+1;
         cur_row->cell_count += 1;
+        quote_count = 0;
 
       }
       
       if (*cur == '\n') {
         
-        finalize_cell(cur_cell,cur);
+        finalize_cell(cur_cell,cur,quote_count);
         cur_row->cell_count += 1;
         cur_row->next_row = alloc_row();
         cur_row = cur_row -> next_row;
         cur_row->first_cell = alloc_cell();
         cur_cell = cur_row->first_cell;
         cur_cell->start = cur+1;
+        quote_count = 0;
         
         num_rows++;
 
@@ -148,8 +157,11 @@ VALUE build_matrix(char *buf, int bufsize) {
 
   }
 
-  if (cur_row->cell_count == 0) {
+  if (cur_row->cell_count == 0) { /* Ended with newline */
     num_rows--;
+  } else { /* No newline before EOF */
+    finalize_cell(cur_cell, cur, quote_count);
+    cur_row->cell_count++;
   }
 
   matrix = build_matrix_from_pointer_tree(first_row, num_rows);
@@ -191,9 +203,10 @@ VALUE parse_string(VALUE self, VALUE string) {
 
 void Init_bamfcsv() {
 
-  VALUE bamfcsv_module = rb_define_module("BAMFCSV");
-  VALUE bamfcsv_singleton_class = rb_singleton_class(bamfcsv_module);
+  BAMFCSV_module = rb_define_module("BAMFCSV");
+  VALUE bamfcsv_singleton_class = rb_singleton_class(BAMFCSV_module);
   rb_define_private_method(bamfcsv_singleton_class, "__parse_file_from_path", parse_file_from_path, 1);
   rb_define_private_method(bamfcsv_singleton_class, "__parse_string", parse_string, 1);
 
+  BAMFCSV_MalformedCSVError_class = rb_define_class_under(BAMFCSV_module, "MalformedCSVError", rb_eRuntimeError);
 }
