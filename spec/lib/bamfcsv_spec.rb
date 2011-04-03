@@ -77,6 +77,18 @@ describe BAMFCSV do
         BAMFCSV.parse("1,2,\n").should == [["1","2",nil]]
       end
 
+      describe "when a quoted cell ends a line" do
+        it "does not raise an exception" do
+          expect { BAMFCSV.parse(%Q|1,2,"3,4"\n5,6,7|) }.should_not raise_error
+          expect { BAMFCSV.parse(%Q|1,2,"3,4"\r\n5,6,7|) }.should_not raise_error
+        end
+
+        it "correctly parses a quoted cell at the end of a line" do
+          BAMFCSV.parse(%Q|1,2,"3,4"\n5,6,7|).should == [["1","2","3,4"],["5","6","7"]]
+          BAMFCSV.parse(%Q|1,2,"3,4"\r\n5,6,7|).should == [["1","2","3,4"],["5","6","7"]]
+        end
+      end
+
       it "raises BAMFCSV::MalformedCSVError when quotes appear in a cell which was not started with quotes" do
         expect { BAMFCSV.parse(' ""') }.should raise_error(BAMFCSV::MalformedCSVError)
         expect { BAMFCSV.parse(" \"\"\n") }.should raise_error(BAMFCSV::MalformedCSVError)

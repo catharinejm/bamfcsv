@@ -118,7 +118,7 @@ VALUE build_matrix(char *buf, int bufsize) {
 
     if (*cur == '"') {
       if (0 == quote_count && cur_cell->start != cur) /* Quotes begin past opening of cell */
-        rb_raise(BAMFCSV_MalformedCSVError_class, "Illegal quoting on line %d.", num_rows);
+        rb_raise(BAMFCSV_MalformedCSVError_class, "Illegal quoting on line %d, cell %d: Quoted cell must open with '\"'", num_rows, cur_row->cell_count+1);
       else
         ++quote_count;
     }
@@ -130,7 +130,7 @@ VALUE build_matrix(char *buf, int bufsize) {
       if (*cur == ',') {
         
         if (quote_count && *(cur-1) != '"')
-          rb_raise(BAMFCSV_MalformedCSVError_class, "Unclosed quoted field on line %d.", num_rows);
+          rb_raise(BAMFCSV_MalformedCSVError_class, "Unclosed quoted field on line %d, cell %d.", num_rows, cur_row->cell_count+1);
 
         finalize_cell(cur_cell,cur,quote_count);
         cur_cell->next_cell = alloc_cell();
@@ -143,9 +143,8 @@ VALUE build_matrix(char *buf, int bufsize) {
       
       if (*cur == '\n') {
         
-        if (quote_count)
-          if (*(cur-1) != '"' || *(cur-1) == '\r' && *(cur-2) != '"')
-            rb_raise(BAMFCSV_MalformedCSVError_class, "Unclosed quoted field on line %d.", num_rows);
+        if (quote_count && !(*(cur-1) == '"' || *(cur-1) == '\r' && *(cur-2) == '"'))
+            rb_raise(BAMFCSV_MalformedCSVError_class, "Unclosed quoted field on line %d, cell %d: EOL", num_rows, cur_row->cell_count+1);
 
         finalize_cell(cur_cell,cur,quote_count);
         cur_row->cell_count += 1;
@@ -165,9 +164,9 @@ VALUE build_matrix(char *buf, int bufsize) {
   }
 
   if (!quotes_matched) /* Reached EOF without matching quotes */
-    rb_raise(BAMFCSV_MalformedCSVError_class, "Illegal quoting on line %d.", num_rows);
+    rb_raise(BAMFCSV_MalformedCSVError_class, "Illegal quoting on line %d, cell %d: File ends without closing '\"'", num_rows, cur_row->cell_count+1);
   else if (quote_count && *cur != '"')
-    rb_raise(BAMFCSV_MalformedCSVError_class, "Unclosed quoted field on line %d.", num_rows);
+    rb_raise(BAMFCSV_MalformedCSVError_class, "Unclosed quoted field on line %d, cell %d: EOF", num_rows, cur_row->cell_count+1);
 
   if (cur_row->cell_count == 0) { /* Ended with newline */
     num_rows--;
