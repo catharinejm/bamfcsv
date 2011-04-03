@@ -77,7 +77,7 @@ describe BAMFCSV do
         BAMFCSV.parse("1,2,\n").should == [["1","2",nil]]
       end
 
-      it "raises BAMFCSV::MalformedCSVError when quotes appear in a cell which was not started with quotes" do
+      fit "raises BAMFCSV::MalformedCSVError when quotes appear in a cell which was not started with quotes" do
         expect { BAMFCSV.parse(' ""') }.should raise_error(BAMFCSV::MalformedCSVError)
         expect { BAMFCSV.parse(" \"\"\n") }.should raise_error(BAMFCSV::MalformedCSVError)
         expect { BAMFCSV.parse(" \"\"\r\n") }.should raise_error(BAMFCSV::MalformedCSVError)
