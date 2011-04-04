@@ -116,4 +116,25 @@ describe BAMFCSV do
       end
     end
   end
+
+  describe "generating a Table" do
+    describe "with only a header" do
+      let(:header_only) { BAMFCSV.parse("1,2,3", :headers => true) }
+      it "has no body rows" do
+        header_only.first.should be_nil
+      end
+
+      it "does nothing when iterating" do
+        expect { header_only.each { |x| raise "Oh dang!" } }.should_not raise_error
+      end
+    end
+
+    describe "with body rows" do
+      it "maps the headers the the values of each row" do
+        table = BAMFCSV.parse("a,b,c\r\n1,2,3\r\nx,y,z", :headers => true)
+        table.first["a"].should == "1"
+        table[1]["c"].should == "z"
+      end
+    end
+  end
 end
