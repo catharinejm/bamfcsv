@@ -4,19 +4,23 @@ module BAMFCSV
     def initialize(matrix)
       @headers = matrix.shift
       @matrix = matrix
-      @table_cache = []
+      @header_map = {}
+      @headers.each_with_index do |h, i|
+        @header_map[h] = i
+      end
+      @row_cache = []
     end
 
     def each
-      @matrix.each_with_index do |row, idx|
+      @matrix.size.times do |idx|
         yield self[idx]
       end
     end
 
     def [](idx)
       idx += @matrix.size if idx < 0
-      return if idx >= @matrix.size || idx < 0
-      @table_cache[idx] ||= row_hash(@matrix[idx])
+      return if idx < 0 || idx >= @matrix.size
+      @row_cache[idx] ||= Row.new(@header_map, @matrix[idx])
     end
 
     def inspect
@@ -26,6 +30,17 @@ module BAMFCSV
     private
     def row_hash(row)
       Hash[@headers.zip(row)]
+    end
+
+    class Row
+      def initialize(header_map, values)
+        @header_map = header_map
+        @values = values
+      end
+
+      def [](key)
+        @values[@header_map[key]]
+      end
     end
   end
 end
