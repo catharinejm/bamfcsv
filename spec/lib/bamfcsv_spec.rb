@@ -68,6 +68,12 @@ describe BAMFCSV do
       BAMFCSV.parse("1,\"\",2").should == [["1","","2"]]
     end
 
+    it "parses a single cell not followed by a newline correctly" do
+      BAMFCSV.parse("1").should == [["1"]]
+      BAMFCSV.parse("1\n2").should == [["1"],["2"]]
+      BAMFCSV.parse("1\r\n2").should == [["1"],["2"]]
+    end
+
     describe "default CSV module compatibility" do
       it "adds a nil cell after a trailing comma with no newline" do
         BAMFCSV.parse("1,2,").should == [["1","2",nil]]
@@ -113,6 +119,13 @@ describe BAMFCSV do
         expect { BAMFCSV.parse("\"\" \n") }.should raise_error(BAMFCSV::MalformedCSVError)
         expect { BAMFCSV.parse("\"\" \r\n") }.should raise_error(BAMFCSV::MalformedCSVError)
         expect { BAMFCSV.parse('1,"" ,2') }.should raise_error(BAMFCSV::MalformedCSVError)
+      end
+
+      it "raises BAMFCSV::MalformedCSVError when unescaped quotes appear in a quoted cell" do
+        expect { BAMFCSV.parse('"a"b"c"') }.should raise_error(BAMFCSV::MalformedCSVError)
+        expect { BAMFCSV.parse('"a"b"c",2') }.should raise_error(BAMFCSV::MalformedCSVError)
+        expect { BAMFCSV.parse(%Q("a"b"c"\n)) }.should raise_error(BAMFCSV::MalformedCSVError)
+        expect { BAMFCSV.parse(%Q("a"b"c"\r\n)) }.should raise_error(BAMFCSV::MalformedCSVError)
       end
     end
   end

@@ -90,9 +90,9 @@ VALUE build_matrix_from_pointer_tree(struct s_Row *first_row, int num_rows) {
 
 void finalize_cell(struct s_Cell *cell, char *cur, int quote_count) {
   if (*(cur-1) == '\r') 
-    cell->len = cur-(cell->start)-1;
+    cell->len = (int)(cur-(cell->start)-1);
   else
-    cell->len = cur-(cell->start);
+    cell->len = (int)(cur-(cell->start));
 
   if (quote_count) cell->has_quotes = 1;
 }
@@ -163,7 +163,7 @@ VALUE build_matrix(char *buf, int bufsize) {
 
   if (!quotes_matched) /* Reached EOF without matching quotes */
     rb_raise(BAMFCSV_MalformedCSVError_class, "Illegal quoting on line %d, cell %d: File ends without closing '\"'", num_rows, cur_row->cell_count+1);
-  else if (quote_count && *cur != '"')
+  else if (quote_count && *(cur-1) != '"')
     rb_raise(BAMFCSV_MalformedCSVError_class, "Unclosed quoted field on line %d, cell %d: EOF", num_rows, cur_row->cell_count+1);
 
   if (cur_row->cell_count == 0) { /* Ended with newline */
