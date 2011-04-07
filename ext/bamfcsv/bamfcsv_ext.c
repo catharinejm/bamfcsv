@@ -141,9 +141,7 @@ VALUE build_matrix(char *buf, int bufsize) {
         cur_cell->start = cur+1;
         quote_count = 0;
 
-      }
-      
-      if (*cur == '\n') {
+      } else if (*cur == '\n') {
         
         if (quote_count && !(*(cur-1) == '"' || *(cur-1) == '\r' && *(cur-2) == '"'))
             rb_raise(BAMFCSV_MalformedCSVError_class, "Unclosed quoted field on line %d, cell %d: EOL", num_rows, cur_row->cell_count);
@@ -156,7 +154,8 @@ VALUE build_matrix(char *buf, int bufsize) {
         
         num_rows++;
 
-      }
+      } else if (quote_count && *cur != '\r' && *cur != '"')
+        rb_raise(BAMFCSV_MalformedCSVError_class, "Illegal quoting on line %d, cell %d", num_rows, cur_row->cell_count);
       
     }
 

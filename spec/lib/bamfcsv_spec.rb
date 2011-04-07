@@ -57,7 +57,7 @@ describe BAMFCSV do
     end
 
     it 'correctly escaptes ""' do
-      BAMFCSV.parse("1,\"\"2\"\"\n").should == [["1", '"2"']]
+      BAMFCSV.parse(%Q|1,"""2"""\n|).should == [["1", '"2"']]
     end
 
     it "parses unquoted empty cells as nil" do
