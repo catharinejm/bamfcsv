@@ -1,19 +1,7 @@
 #include <stdlib.h>
 #include "bamfcsv_ext.h"
 
-struct s_Row *alloc_row() {
-
-  struct s_Row *new_row = malloc(sizeof(struct s_Row));
-
-  new_row -> first_cell = 0;
-  new_row -> next_row = 0;
-  new_row -> cell_count = 0;
-
-  return new_row;
-
-}
-
-struct s_Cell *alloc_cell() {
+struct s_Cell *alloc_cell(struct s_Row *row, struct s_Cell *prev_cell) {
 
   struct s_Cell *new_cell = malloc(sizeof(struct s_Cell));
 
@@ -21,8 +9,23 @@ struct s_Cell *alloc_cell() {
   new_cell -> len = 0;
   new_cell -> next_cell = 0;
   new_cell -> has_quotes = 0;
+  row->cell_count++;
+  if (prev_cell) prev_cell->next_cell = new_cell;
 
   return new_cell;
+
+}
+
+struct s_Row *alloc_row(struct s_Row *prev_row) {
+
+  struct s_Row *new_row = malloc(sizeof(struct s_Row));
+
+  new_row -> next_row = 0;
+  new_row -> cell_count = 0;
+  new_row -> first_cell = alloc_cell(new_row, 0);
+  if (prev_row) prev_row->next_row = new_row;
+
+  return new_row;
 
 }
 
@@ -66,21 +69,20 @@ VALUE build_matrix_from_pointer_tree(struct s_Row *first_row, int num_rows) {
     cur_cell = cur_row->first_cell;
     row = rb_ary_new2(cur_row->cell_count);
     rb_ary_store(matrix,i,row);
-    for (j = 0; j < cur_row->cell_count; j++) {
-      if (*(cur_cell->start) == '"' 
-          && *((cur_cell->start)+(cur_cell->len-1)) == '"')
-        new_string = rb_str_new(cur_cell->start+1, cur_cell->len-2);
-      else {
-        if (cur_cell->len)
-          new_string = rb_str_new(cur_cell->start, cur_cell->len);
-        else
-          new_string = Qnil; /* Empty, unquoted cells are nil, for default ruby CSV compatibility */
+    if (cur_row->cell_count > 1 || cur_cell->len) {
+      for (j = 0; j < cur_row->cell_count; j++) {
+        if (cur_cell->has_quotes) {
+          new_string = rb_str_new(cur_cell->start+1, cur_cell->len-2);
+          rb_funcall(new_string, gsub, 2, dquote, quote);
+        } else {
+          if (cur_cell->len)
+            new_string = rb_str_new(cur_cell->start, cur_cell->len);
+          else
+            new_string = Qnil; /* Empty, unquoted cells are nil, for default ruby CSV compatibility */
+        }
+        rb_ary_store(row, j, new_string);
+        cur_cell = cur_cell->next_cell;
       }
-      if (cur_cell->has_quotes) {
-        rb_funcall(new_string, gsub, 2, dquote, quote);
-      }
-      rb_ary_store(row, j, new_string);
-      cur_cell = cur_cell->next_cell;
     }
     cur_row = cur_row->next_row;
   }
@@ -102,10 +104,9 @@ VALUE build_matrix(char *buf, int bufsize) {
   int num_rows = 1;
   int quote_count = 0, quotes_matched = 1;
 
-  struct s_Row *first_row = alloc_row();
+  struct s_Row *first_row = alloc_row(0);
   struct s_Row *cur_row = first_row;
-  struct s_Cell *cur_cell = alloc_cell();
-  first_row->first_cell = cur_cell;
+  struct s_Cell *cur_cell = cur_row->first_cell;
   cur_cell->start = buf;
 
   VALUE matrix;
@@ -116,7 +117,7 @@ VALUE build_matrix(char *buf, int bufsize) {
 
     if (*cur == '"') {
       if (0 == quote_count && cur_cell->start != cur) /* Quotes begin past opening of cell */
-        rb_raise(BAMFCSV_MalformedCSVError_class, "Illegal quoting on line %d, cell %d: Quoted cell must open with '\"'", num_rows, cur_row->cell_count+1);
+        rb_raise(BAMFCSV_MalformedCSVError_class, "Illegal quoting on line %d, cell %d: Quoted cell must open with '\"'", num_rows, cur_row->cell_count);
       else
         ++quote_count;
     }
@@ -128,13 +129,11 @@ VALUE build_matrix(char *buf, int bufsize) {
       if (*cur == ',') {
         
         if (quote_count && *(cur-1) != '"')
-          rb_raise(BAMFCSV_MalformedCSVError_class, "Unclosed quoted field on line %d, cell %d.", num_rows, cur_row->cell_count+1);
+          rb_raise(BAMFCSV_MalformedCSVError_class, "Unclosed quoted field on line %d, cell %d.", num_rows, cur_row->cell_count);
 
-        finalize_cell(cur_cell,cur,quote_count);
-        cur_cell->next_cell = alloc_cell();
-        cur_cell = cur_cell->next_cell;
+        finalize_cell(cur_cell, cur, quote_count);
+        cur_cell = alloc_cell(cur_row, cur_cell);
         cur_cell->start = cur+1;
-        cur_row->cell_count += 1;
         quote_count = 0;
 
       }
@@ -142,13 +141,10 @@ VALUE build_matrix(char *buf, int bufsize) {
       if (*cur == '\n') {
         
         if (quote_count && !(*(cur-1) == '"' || *(cur-1) == '\r' && *(cur-2) == '"'))
-            rb_raise(BAMFCSV_MalformedCSVError_class, "Unclosed quoted field on line %d, cell %d: EOL", num_rows, cur_row->cell_count+1);
+            rb_raise(BAMFCSV_MalformedCSVError_class, "Unclosed quoted field on line %d, cell %d: EOL", num_rows, cur_row->cell_count);
 
-        finalize_cell(cur_cell,cur,quote_count);
-        cur_row->cell_count += 1;
-        cur_row->next_row = alloc_row();
-        cur_row = cur_row -> next_row;
-        cur_row->first_cell = alloc_cell();
+        finalize_cell(cur_cell, cur, quote_count);
+        cur_row = alloc_row(cur_row);
         cur_cell = cur_row->first_cell;
         cur_cell->start = cur+1;
         quote_count = 0;
@@ -162,16 +158,11 @@ VALUE build_matrix(char *buf, int bufsize) {
   }
 
   if (!quotes_matched) /* Reached EOF without matching quotes */
-    rb_raise(BAMFCSV_MalformedCSVError_class, "Illegal quoting on line %d, cell %d: File ends without closing '\"'", num_rows, cur_row->cell_count+1);
-  else if (quote_count && *(cur-1) != '"')
-    rb_raise(BAMFCSV_MalformedCSVError_class, "Unclosed quoted field on line %d, cell %d: EOF", num_rows, cur_row->cell_count+1);
+    rb_raise(BAMFCSV_MalformedCSVError_class, "Illegal quoting on line %d, cell %d: File ends without closing '\"'", num_rows, cur_row->cell_count);
+  else if (quote_count && *(cur-1) != '"') /* Quotes closed before end of final cell */
+    rb_raise(BAMFCSV_MalformedCSVError_class, "Unclosed quoted field on line %d, cell %d: EOF", num_rows, cur_row->cell_count);
 
-  if (cur_row->cell_count == 0) { /* Ended with newline */
-    num_rows--;
-  } else { /* No newline before EOF */
-    finalize_cell(cur_cell, cur, quote_count);
-    cur_row->cell_count++;
-  }
+  finalize_cell(cur_cell, cur, quote_count);
 
   matrix = build_matrix_from_pointer_tree(first_row, num_rows);
 
