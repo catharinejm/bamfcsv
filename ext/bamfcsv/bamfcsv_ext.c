@@ -112,6 +112,11 @@ VALUE build_matrix(char *buf, int bufsize) {
   VALUE matrix;
 
   char *cur;
+
+  if (bufsize > 0 && *(buf+bufsize-1) == '\n') {
+    *(buf+bufsize-1) = 0;
+    --bufsize;
+  }
   
   for (cur = buf; cur < buf+bufsize; cur++) {
 

@@ -4,6 +4,7 @@ $:.unshift(File.join(root_path, "ext"))
 require 'bundler'
 require 'bamfcsv'
 Bundler.require(:development)
+require 'csv'
 
 RSpec.configure do |config|
   config.filter_run :focused => true

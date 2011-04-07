@@ -127,6 +127,13 @@ describe BAMFCSV do
         expect { BAMFCSV.parse(%Q("a"b"c"\n)) }.should raise_error(BAMFCSV::MalformedCSVError)
         expect { BAMFCSV.parse(%Q("a"b"c"\r\n)) }.should raise_error(BAMFCSV::MalformedCSVError)
       end
+
+      ['', "\n", "\r\n", ",", "\n\n", "\r\n\r\n"].each do |csv|
+        csv_result = CSV.parse(csv)
+        it "BAMFCSV parses #{csv.inspect} the same way as CSV (#{csv_result.inspect})" do
+          BAMFCSV.parse(csv).should == csv_result
+        end
+      end
     end
   end
 

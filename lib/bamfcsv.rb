@@ -9,7 +9,6 @@ module BAMFCSV
 
   def self.parse(csv_str, opts={})
     return [] if csv_str.empty?
-    csv_str.chomp!
     matrix = __parse_string(csv_str)
     if opts[:headers]
       Table.new(matrix)
