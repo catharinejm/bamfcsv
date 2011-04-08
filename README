@@ -2,11 +2,26 @@ BAMFCSV -- Parsin' CSVs like a BAMF!
 
 $ gem install bamfcsv
 $ irb -rbamfcsv
-irb> BAMFCSV.read "super_giant_properly_formatted.csv"
+irb> BAMFCSV.read "super_giant.csv"
+===> ...large array of arrays...
 
 BAMF!!! CSV IS PARSED IN LESS THAN ONE SECOND! GUARANTEED!*
 
+also:
+BAMFCSV.parse "csv,string,of,awesome"
+
+AND! both #parse and #read take an optional :headers => true to generate a table!
+
+irb(1.9.2): table = BAMFCSV.parse <<EOF, headers: true
+         ?> foo,bar
+         ?> 1,2
+         ?> 3,4
+         ?> EOF
+==========> #<BAMFCSV::Table>
+irb(1.9.2): table.first["foo"]
+==========> "1"
+irb(1.9.2): table[1]["bar"]
+==========> "4"
 
 
-
-* Results may vary.
+(*) Results may vary.

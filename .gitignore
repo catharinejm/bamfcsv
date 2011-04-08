@@ -8,4 +8,4 @@ a.out
 *.csv*
 !spec/fixtures/*.csv*
 Makefile
-pkg
+*.gem
