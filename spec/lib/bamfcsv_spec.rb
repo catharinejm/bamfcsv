@@ -156,5 +156,16 @@ describe BAMFCSV do
         table[1]["c"].should == "z"
       end
     end
+
+    describe "Table#each" do
+      let(:table) { BAMFCSV.parse("a,b\n1,2", :headers => true) }
+      it "Table#each returns self" do
+        table.each { |r| ;}.should == table
+      end
+
+      it "does not require a block" do
+        expect { table.each }.should_not raise_error(LocalJumpError)
+      end
+    end
   end
 end

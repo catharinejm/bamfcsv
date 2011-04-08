@@ -12,9 +12,12 @@ module BAMFCSV
     end
 
     def each
-      @matrix.size.times do |idx|
-        yield self[idx]
+      if block_given?
+        @matrix.size.times do |idx|
+          yield self[idx]
+        end
       end
+      self
     end
 
     def [](idx)
