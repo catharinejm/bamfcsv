@@ -155,6 +155,18 @@ describe BAMFCSV do
         table.first["a"].should == "1"
         table[1]["c"].should == "z"
       end
+
+      it "knows the headers" do
+        table = BAMFCSV.parse("a,b,c\r\n1,2,3\r\nx,y,z", :headers => true)
+        row = table.first
+        row.headers.should == ['a', 'b', 'c']
+      end
+
+      it "knows the fields" do
+        table = BAMFCSV.parse("a,b,c\r\n1,2,3\r\nx,y,z", :headers => true)
+        row = table.first
+        row.fields.should == ['1', '2', '3']
+      end
     end
 
     describe "Table#each" do

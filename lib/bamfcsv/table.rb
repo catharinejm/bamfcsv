@@ -36,13 +36,19 @@ module BAMFCSV
     end
 
     class Row
-      def initialize(header_map, values)
+      attr_reader :fields
+
+      def initialize(header_map, fields)
         @header_map = header_map
-        @values = values
+        @fields = fields
+      end
+
+      def headers
+        @header_map.keys
       end
 
       def [](key)
-        @values[@header_map[key]]
+        @fields[@header_map[key]]
       end
     end
   end
