@@ -5,12 +5,12 @@ struct s_Cell *alloc_cell(struct s_Row *row, struct s_Cell *prev_cell) {
 
   struct s_Cell *new_cell = malloc(sizeof(struct s_Cell));
 
-  new_cell -> start = 0;
+  new_cell -> start = NULL;
   new_cell -> len = 0;
-  new_cell -> next_cell = 0;
+  new_cell -> next_cell = NULL;
   new_cell -> has_quotes = 0;
   row->cell_count++;
-  if (prev_cell) prev_cell->next_cell = new_cell;
+  if (prev_cell != NULL) prev_cell->next_cell = new_cell;
 
   return new_cell;
 
@@ -20,10 +20,10 @@ struct s_Row *alloc_row(struct s_Row *prev_row) {
 
   struct s_Row *new_row = malloc(sizeof(struct s_Row));
 
-  new_row -> next_row = 0;
+  new_row -> next_row = NULL;
   new_row -> cell_count = 0;
-  new_row -> first_cell = alloc_cell(new_row, 0);
-  if (prev_row) prev_row->next_row = new_row;
+  new_row -> first_cell = alloc_cell(new_row, NULL);
+  if (prev_row != NULL) prev_row->next_row = new_row;
 
   return new_row;
 
@@ -31,7 +31,7 @@ struct s_Row *alloc_row(struct s_Row *prev_row) {
 
 void free_cell(struct s_Cell *cell) {
 
-  if (cell != 0) {
+  if (cell != NULL) {
     free_cell(cell->next_cell);
     free(cell);
   }
@@ -40,7 +40,7 @@ void free_cell(struct s_Cell *cell) {
 
 void free_row(struct s_Row *row) {
 
-  if (row != 0) {
+  if (row != NULL) {
 
     free_row(row->next_row);
     free_cell(row->first_cell);
@@ -104,7 +104,7 @@ VALUE build_matrix(char *buf, int bufsize) {
   int num_rows = 1;
   int quote_count = 0, quotes_matched = 1;
 
-  struct s_Row *first_row = alloc_row(0);
+  struct s_Row *first_row = alloc_row(NULL);
   struct s_Row *cur_row = first_row;
   struct s_Cell *cur_cell = cur_row->first_cell;
   cur_cell->start = buf;
