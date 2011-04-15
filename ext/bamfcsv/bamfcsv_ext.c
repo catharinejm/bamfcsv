@@ -1,62 +1,45 @@
 #include <stdlib.h>
 #include "bamfcsv_ext.h"
 
-struct s_Cell *alloc_cell(struct s_Row *row, struct s_Cell *prev_cell) {
+void init_cell(struct s_Cell *cell) {
 
-  struct s_Cell *new_cell = malloc(sizeof(struct s_Cell));
-
-  new_cell -> start = 0;
-  new_cell -> len = 0;
-  new_cell -> next_cell = 0;
-  new_cell -> has_quotes = 0;
-  row->cell_count++;
-  if (prev_cell) prev_cell->next_cell = new_cell;
-
-  return new_cell;
+  cell -> start = 0;
+  cell -> len = 0;
+  cell -> has_quotes = 0;
 
 }
 
-struct s_Row *alloc_row(struct s_Row *prev_row) {
+struct s_Row *alloc_row(struct s_Row *prev_row, unsigned long cell_count) {
 
   struct s_Row *new_row = malloc(sizeof(struct s_Row));
 
   new_row -> next_row = 0;
-  new_row -> cell_count = 0;
-  new_row -> first_cell = alloc_cell(new_row, 0);
+  new_row -> cell_count = cell_count;
+  new_row -> cells = calloc(sizeof(struct s_Cell), cell_count); 
   if (prev_row) prev_row->next_row = new_row;
 
   return new_row;
 
 }
 
-void free_cell(struct s_Cell *cell) {
-
-  if (cell != 0) {
-    free_cell(cell->next_cell);
-    free(cell);
-  }
-
-}
-
 void free_row(struct s_Row *row) {
 
   if (row != 0) {
-
     free_row(row->next_row);
-    free_cell(row->first_cell);
+    free(row->cells);
     free(row);
 
   }
 
 }
 
-VALUE build_matrix_from_pointer_tree(struct s_Row *first_row, int num_rows) {
+VALUE build_matrix_from_pointer_tree(struct s_Row *first_row, unsigned long num_rows) {
   VALUE matrix;
   VALUE row;
   VALUE new_string;
   int i,j;
   struct s_Row *cur_row;
-  struct s_Cell *cur_cell;
+  struct s_Cell *cur_cells;
 
   cur_row = first_row;
   matrix = rb_ary_new2(num_rows);
@@ -66,23 +49,20 @@ VALUE build_matrix_from_pointer_tree(struct s_Row *first_row, int num_rows) {
 
   for (i = 0; i < num_rows; i++) {
 
-    cur_cell = cur_row->first_cell;
+    cur_cells = cur_row->cells;
     row = rb_ary_new2(cur_row->cell_count);
     rb_ary_store(matrix,i,row);
-    if (cur_row->cell_count > 1 || cur_cell->len) {
-      for (j = 0; j < cur_row->cell_count; j++) {
-        if (cur_cell->has_quotes) {
-          new_string = rb_str_new(cur_cell->start+1, cur_cell->len-2);
-          rb_funcall(new_string, gsub, 2, dquote, quote);
-        } else {
-          if (cur_cell->len)
-            new_string = rb_str_new(cur_cell->start, cur_cell->len);
-          else
-            new_string = Qnil; /* Empty, unquoted cells are nil, for default ruby CSV compatibility */
-        }
-        rb_ary_store(row, j, new_string);
-        cur_cell = cur_cell->next_cell;
+    for (j = 0; j < cur_row->cell_count; j++) {
+      if (cur_cells[j].has_quotes) {
+        new_string = rb_str_new(cur_cells[j].start+1, cur_cells[j].len-2);
+        rb_funcall(new_string, gsub, 2, dquote, quote);
+      } else {
+        if (cur_cells[j].len)
+          new_string = rb_str_new(cur_cells[j].start, cur_cells[j].len);
+        else
+          new_string = Qnil; /* Empty, unquoted cells are nil, for default ruby CSV compatibility */
       }
+      rb_ary_store(row, j, new_string);
     }
     cur_row = cur_row->next_row;
   }
@@ -99,9 +79,9 @@ void finalize_cell(struct s_Cell *cell, char *cur, int quote_count) {
   if (quote_count) cell->has_quotes = 1;
 }
 
-VALUE build_matrix(char *buf, int bufsize) {
+VALUE build_matrix(char *buf, unsigned long bufsize) {
   int str_start = 0;
-  int num_rows = 1;
+  unsigned long num_rows = 1;
   int quote_count = 0, quotes_matched = 1;
 
   struct s_Row *first_row = alloc_row(0);
@@ -178,7 +158,7 @@ VALUE build_matrix(char *buf, int bufsize) {
 
 VALUE parse_string(VALUE self, VALUE string) {
 
-  return build_matrix(RSTRING_PTR(string), NUM2INT(rb_str_length(string)));
+  return build_matrix(RSTRING_PTR(string), NUM2ULONG(rb_str_length(string)));
 
 }
 

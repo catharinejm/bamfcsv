@@ -7,16 +7,15 @@ VALUE BAMFCSV_module;
 VALUE BAMFCSV_MalformedCSVError_class;
 
 struct s_Row {
-  struct s_Cell *first_cell;
+  struct s_Cell cells[];
   struct s_Row *next_row;
-  int cell_count;
+  unsigned long cell_count;
 };
 
 struct s_Cell {
   char *start;
   int len;
   int has_quotes;
-  struct s_Cell *next_cell;
 };
 
 void Init_bamfcsv();
