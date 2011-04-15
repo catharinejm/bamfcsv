@@ -1,12 +1,13 @@
 #include <stdlib.h>
 #include "bamfcsv_ext.h"
 
-void init_cell(struct s_Cell *cell) {
+struct s_Cell *init_cell(struct s_Cell *cell) {
 
   cell -> start = 0;
   cell -> len = 0;
   cell -> has_quotes = 0;
 
+  return cell;
 }
 
 struct s_Row *alloc_row(struct s_Row *prev_row, unsigned long cell_count) {
@@ -20,6 +21,15 @@ struct s_Row *alloc_row(struct s_Row *prev_row, unsigned long cell_count) {
 
   return new_row;
 
+}
+
+struct s_Cell *add_cell(struct s_Row *row) {
+  row->cell_count++;
+  struct s_Cell *new_cells = realloc(row->cells, sizeof(struct s_Cell)*row->cell_count);
+
+  if (!new_cells) rb_raise("This is bad.");
+
+  return init_cell(new_cells[row->cell_count]);
 }
 
 void free_row(struct s_Row *row) {
@@ -81,12 +91,13 @@ void finalize_cell(struct s_Cell *cell, char *cur, int quote_count) {
 
 VALUE build_matrix(char *buf, unsigned long bufsize) {
   int str_start = 0;
-  unsigned long num_rows = 1;
+  unsigned long num_rows = 1, num_cells = 1;
   int quote_count = 0, quotes_matched = 1;
 
-  struct s_Row *first_row = alloc_row(0);
+  struct s_Row *first_row = alloc_row(0, num_cells);
+
   struct s_Row *cur_row = first_row;
-  struct s_Cell *cur_cell = cur_row->first_cell;
+  struct s_Cell *cur_cell = cur_row->cells;
   cur_cell->start = buf;
 
   VALUE matrix;
@@ -117,17 +128,29 @@ VALUE build_matrix(char *buf, unsigned long bufsize) {
           rb_raise(BAMFCSV_MalformedCSVError_class, "Unclosed quoted field on line %d, cell %d.", num_rows, cur_row->cell_count);
 
         finalize_cell(cur_cell, cur, quote_count);
-        cur_cell = alloc_cell(cur_row, cur_cell);
+        if (cur_row == first_row) {
+          cur_cell = add_cell(first_row);
+          num_cells++;
+        } else {
+          if (cur_cell = cur_row->cells[num_cells-1])
+            rb_raise(BAMFCSV_MalformedCSVError_class, "Too many cells on line %d, cell %d: EOL", num_rows, cur_row->cell_count);
+
+          cur_cell++;
+        }
+
         cur_cell->start = cur+1;
         quote_count = 0;
 
       } else if (*cur == '\n') {
         
         if (quote_count && !(*(cur-1) == '"' || *(cur-1) == '\r' && *(cur-2) == '"'))
-            rb_raise(BAMFCSV_MalformedCSVError_class, "Unclosed quoted field on line %d, cell %d: EOL", num_rows, cur_row->cell_count);
+          rb_raise(BAMFCSV_MalformedCSVError_class, "Unclosed quoted field on line %d, cell %d: EOL", num_rows, cur_row->cell_count);
+
+        if (cur_cell < cur_row->cells[num_cells-1])
+          rb_raise(BAMFCSV_MalformedCSVError_class, "Too few cells on line %d, cell %d: EOL", num_rows, cur_row->cell_count);
 
         finalize_cell(cur_cell, cur, quote_count);
-        cur_row = alloc_row(cur_row);
+        cur_row = alloc_row(cur_row, num_cells);
         cur_cell = cur_row->first_cell;
         cur_cell->start = cur+1;
         quote_count = 0;
