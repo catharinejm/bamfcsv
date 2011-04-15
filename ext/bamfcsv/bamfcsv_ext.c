@@ -29,31 +29,20 @@ struct bamfcsv_Row *bamfcsv_alloc_row(struct bamfcsv_Row *prev_row) {
 
 }
 
-void bamfcsv_free_rows(struct bamfcsv_Row *row, unsigned long num_rows) {
+void bamfcsv_free_rows(struct bamfcsv_Row *row) {
 
-  unsigned long i, j;
-  struct bamfcsv_Row **rows = calloc(sizeof(struct bamfcsv_Row*), num_rows);
   struct bamfcsv_Row *cur_row = row;
-  struct bamfcsv_Cell *cur_cell;
-  for (i = 0; i < num_rows; i++) {
-    rows[i] = cur_row;
-    struct bamfcsv_Cell **cells = calloc(sizeof(struct bamfcsv_Cell*), cur_row->cell_count);
-    cur_cell = cur_row -> first_cell;
-    for(j = 0; j < cur_row -> cell_count; j++) {
-      cells[j] = cur_cell;
-      cur_cell = cur_cell -> next_cell;
+  while (cur_row != NULL) {
+    struct bamfcsv_Cell *cur_cell = cur_row->first_cell;
+    while (cur_cell != NULL) {
+      struct bamfcsv_Cell *next_cell = cur_cell->next_cell;
+      free(cur_cell);
+      cur_cell = next_cell;
     }
-    for (j = 0; j < cur_row -> cell_count; j++) {
-      free(cells[j]);
-    }
-    free(cells);
-    cur_row = cur_row -> next_row;
+    struct bamfcsv_Row *next_row = cur_row->next_row;
+    free(cur_row);
+    cur_row = next_row;
   }
-  
-  for (i = 0; i < num_rows; i++) {
-    free(rows[i]);
-  }
-  free(rows);
 
 }
 
@@ -177,7 +166,7 @@ VALUE bamfcsv_build_matrix(char *buf, int bufsize) {
 
   matrix = bamfcsv_build_matrix_from_pointer_tree(first_row, num_rows);
 
-  bamfcsv_free_rows(first_row, num_rows);
+  bamfcsv_free_rows(first_row);
 
   return matrix;
 
