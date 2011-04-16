@@ -6,9 +6,6 @@ VALUE BAMFCSV_module;
 VALUE BAMFCSV_MalformedCSVError_class;
 
 VALUE bamfcsv_finalize_cell(char *cell_start, char *cell_end, int quote_count) {
-  VALUE dbl_dquote = rb_str_new("\"\"", 2), dquote = rb_str_new("\"", 1);
-  ID gsub_bang = rb_intern("gsub!");
-
   if (*cell_end == '\r')
     cell_end--;
 
@@ -21,9 +18,6 @@ VALUE bamfcsv_finalize_cell(char *cell_start, char *cell_end, int quote_count) {
   }
 
   VALUE cell_str = rb_str_new(cell_start, cell_end-cell_start+1);
-
-  if (quote_count)
-    rb_funcall(cell_str, gsub_bang, 2, dbl_dquote, dquote);
 
   return cell_str;
 }
@@ -41,6 +35,9 @@ VALUE bamfcsv_build_matrix(char *buf, unsigned long bufsize) {
     *(buf+bufsize-1) = 0;
     --bufsize;
   }
+
+  VALUE dbl_dquote = rb_str_new("\"\"", 2), dquote = rb_str_new("\"", 1);
+  ID gsub_bang = rb_intern("gsub!");
   
   for (; cur < buf+bufsize; cur++) {
 
@@ -61,6 +58,9 @@ VALUE bamfcsv_build_matrix(char *buf, unsigned long bufsize) {
           rb_raise(BAMFCSV_MalformedCSVError_class, "Unclosed quoted field on line %lu, cell %lu.", num_rows, cell_count);
 
         VALUE cell_str = bamfcsv_finalize_cell(cell_start, cur-1, quote_count);
+        if (quote_count)
+          rb_funcall(cell_str, gsub_bang, 2, dbl_dquote, dquote);
+
         rb_ary_push(row, cell_str);
         cell_start = cur+1;
 
@@ -73,6 +73,8 @@ VALUE bamfcsv_build_matrix(char *buf, unsigned long bufsize) {
             rb_raise(BAMFCSV_MalformedCSVError_class, "Unclosed quoted field on line %lu, cell %lu: EOL", num_rows, cell_count);
 
         VALUE cell_str = bamfcsv_finalize_cell(cell_start, cur-1, quote_count);
+        if (quote_count)
+          rb_funcall(cell_str, gsub_bang, 2, dbl_dquote, dquote);
         /* Completely blank lines don't even get a nil. This matches CSV's behavior. */
         if (cell_count > 1 || cell_str != Qnil)
           rb_ary_push(row, cell_str);
@@ -97,6 +99,8 @@ VALUE bamfcsv_build_matrix(char *buf, unsigned long bufsize) {
     rb_raise(BAMFCSV_MalformedCSVError_class, "Unclosed quoted field on line %lu, cell %lu: EOF", num_rows, cell_count);
 
   VALUE cell_str = bamfcsv_finalize_cell(cell_start, cur-1, quote_count);
+  if (quote_count)
+    rb_funcall(cell_str, gsub_bang, 2, dbl_dquote, dquote);
   /* Completely blank lines don't even get a nil. This matches CSV's behavior. */
   if (cell_count > 1 || cell_str != Qnil)
     rb_ary_push(row, cell_str);
