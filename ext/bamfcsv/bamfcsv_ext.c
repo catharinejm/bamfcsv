@@ -1,5 +1,6 @@
 #include <ruby/ruby.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 VALUE BAMFCSV_module;
 VALUE BAMFCSV_MalformedCSVError_class;
@@ -8,11 +9,16 @@ VALUE bamfcsv_finalize_cell(char *cell_start, char *cell_end, int quote_count) {
   VALUE dbl_dquote = rb_str_new("\"\"", 2), dquote = rb_str_new("\"", 1);
   ID gsub_bang = rb_intern("gsub!");
 
-  if (cell_start == cell_end)
-    return Qnil;
-
   if (*cell_end == '\r')
     cell_end--;
+
+  if (cell_end < cell_start)
+    return Qnil;
+
+  if (quote_count) {
+    cell_start++;
+    cell_end--;
+  }
 
   VALUE cell_str = rb_str_new(cell_start, cell_end-cell_start+1);
 
@@ -67,7 +73,9 @@ VALUE bamfcsv_build_matrix(char *buf, unsigned long bufsize) {
             rb_raise(BAMFCSV_MalformedCSVError_class, "Unclosed quoted field on line %lu, cell %lu: EOL", num_rows, cell_count);
 
         VALUE cell_str = bamfcsv_finalize_cell(cell_start, cur-1, quote_count);
-        rb_ary_push(row, cell_str);
+        /* Completely blank lines don't even get a nil. This matches CSV's behavior. */
+        if (cell_count > 1 || cell_str != Qnil)
+          rb_ary_push(row, cell_str);
         rb_ary_push(matrix, row);
         row = rb_ary_new();
         cell_start = cur+1;
@@ -89,7 +97,9 @@ VALUE bamfcsv_build_matrix(char *buf, unsigned long bufsize) {
     rb_raise(BAMFCSV_MalformedCSVError_class, "Unclosed quoted field on line %lu, cell %lu: EOF", num_rows, cell_count);
 
   VALUE cell_str = bamfcsv_finalize_cell(cell_start, cur-1, quote_count);
-  rb_ary_push(row, cell_str);
+  /* Completely blank lines don't even get a nil. This matches CSV's behavior. */
+  if (cell_count > 1 || cell_str != Qnil)
+    rb_ary_push(row, cell_str);
   rb_ary_push(matrix, row);
 
   return matrix;
