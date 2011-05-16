@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    bamfcsv (0.1.4)
+    bamfcsv (0.2.0)
 
 GEM
   remote: http://rubygems.org/

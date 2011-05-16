@@ -30,6 +30,16 @@ module BAMFCSV
       "#<BAMFCSV::Table>"
     end
 
+    alias __is_a? is_a?
+    def is_a?(other)
+      Array == other || __is_a?(other)
+    end
+
+    alias __kind_of? kind_of?
+    def kind_of?(other)
+      Array == other || __kind_of?(other)
+    end
+
     private
     def row_hash(row)
       Hash[@headers.zip(row)]
@@ -50,6 +60,17 @@ module BAMFCSV
       def [](key)
         @fields[@header_map[key]]
       end
+
+      alias __is_a? is_a?
+      def is_a?(other)
+        Hash == other || __is_a?(other)
+      end
+
+      alias __kind_of? kind_of?
+      def kind_of?(other)
+        Hash == other || __kind_of?(other)
+      end
+
     end
   end
 end
