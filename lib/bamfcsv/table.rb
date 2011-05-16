@@ -27,7 +27,7 @@ module BAMFCSV
     end
 
     def inspect
-      "#<BAMFCSV::Table>"
+      "[#{self.map{|r| r.inspect}.join(", ")}]"
     end
 
     alias __is_a? is_a?
@@ -69,6 +69,14 @@ module BAMFCSV
       alias __kind_of? kind_of?
       def kind_of?(other)
         Hash == other || __kind_of?(other)
+      end
+
+      def inspect
+        pairs = []
+        headers.each do |h|
+          pairs << "#{h.inspect} => #{self[h].inspect}"
+        end
+        "{#{pairs.join(", ")}}"
       end
 
     end

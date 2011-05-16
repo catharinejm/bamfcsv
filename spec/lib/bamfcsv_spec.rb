@@ -201,5 +201,33 @@ describe BAMFCSV do
         expect { table.each }.should_not raise_error(LocalJumpError)
       end
     end
+
+    describe "Table#inspect" do
+      it "is an Array of Hashes" do
+        csv = <<CSV
+foo,bar
+1,2
+baz,quux
+CSV
+
+        inspected = '[{"foo" => "1", "bar" => "2"}, {"foo" => "baz", "bar" => "quux"}]'
+
+        BAMFCSV.parse(csv, :headers => true).inspect.should == inspected
+      end
+    end
+
+    describe "Table::Row#inspect" do
+      it "is a Hash" do
+        csv = <<CSV
+foo,bar
+1,2
+baz,quux
+CSV
+
+        inspected = '{"foo" => "1", "bar" => "2"}'
+
+        BAMFCSV.parse(csv, :headers => true).first.inspect.should == inspected
+      end
+    end
   end
 end
