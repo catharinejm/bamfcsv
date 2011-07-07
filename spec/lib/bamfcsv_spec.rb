@@ -56,7 +56,7 @@ describe BAMFCSV do
       BAMFCSV.parse("1,2").should == [["1","2"]]
     end
 
-    it 'correctly escaptes ""' do
+    it 'correctly escapes ""' do
       BAMFCSV.parse(%Q|1,"""2"""\n|).should == [["1", '"2"']]
     end
 
@@ -72,6 +72,10 @@ describe BAMFCSV do
       BAMFCSV.parse("1").should == [["1"]]
       BAMFCSV.parse("1\n2").should == [["1"],["2"]]
       BAMFCSV.parse("1\r\n2").should == [["1"],["2"]]
+    end
+
+    it "parses data outside the 7-bit range" do
+      BAMFCSV.parse("age \u226540 years").should == [["age \u226540 years"]]
     end
 
     describe "default CSV module compatibility" do
@@ -144,7 +148,7 @@ describe BAMFCSV do
         table.kind_of?(Array).should be_true
         table.is_a?(Array).should be_true
       end
-      
+
       it "Array === table" do
         pending { (Array === table).should be_true }
       end
