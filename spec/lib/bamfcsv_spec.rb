@@ -56,6 +56,14 @@ describe BAMFCSV do
       BAMFCSV.parse("1,2").should == [["1","2"]]
     end
 
+    it "correctly parses the last cell when followed by CRLF" do
+      BAMFCSV.parse("1,2\r\n").should == [["1","2"]]
+    end
+
+    it "correctly parses the last cell when quotes and followed by CRLF" do
+      BAMFCSV.parse("1,\"2\"\r\n").should == [["1","2"]]
+    end
+
     it 'correctly escapes ""' do
       BAMFCSV.parse(%Q|1,"""2"""\n|).should == [["1", '"2"']]
     end
