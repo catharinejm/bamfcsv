@@ -150,28 +150,6 @@ describe BAMFCSV do
   end
 
   describe "generating a Table" do
-    describe "identity" do
-      let(:table) { BAMFCSV.parse("foo,bar\n1,2", :headers => true) }
-      it "Table isa Array" do
-        table.kind_of?(Array).should be_true
-        table.is_a?(Array).should be_true
-      end
-
-      it "Array === table" do
-        pending { (Array === table).should be_true }
-      end
-
-      it "Table::Row isa Hash" do
-        row = table.first
-        row.kind_of?(Hash).should be_true
-        row.is_a?(Hash).should be_true
-      end
-
-      it "Hash === row" do
-        pending { (Hash === row).should be_true }
-      end
-    end
-
     describe "with only a header" do
       let(:header_only) { BAMFCSV.parse("1,2,3", :headers => true) }
       it "has no body rows" do
