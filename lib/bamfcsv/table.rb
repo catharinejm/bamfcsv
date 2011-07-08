@@ -26,6 +26,10 @@ module BAMFCSV
       @row_cache[idx] ||= Row.new(@header_map, @matrix[idx])
     end
 
+    def empty?
+      @matrix.empty?
+    end
+
     def inspect
       "[#{self.map{|r| r.inspect}.join(", ")}]"
     end

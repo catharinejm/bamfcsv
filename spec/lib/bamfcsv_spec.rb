@@ -206,6 +206,28 @@ CSV
       end
     end
 
+    describe "Table#empty?" do
+      it "returns true for an empty table with headers" do
+        table = BAMFCSV.parse("column1,column2\n", :headers => true)
+        table.empty?.should be_true
+      end
+
+      it "returns false for a non-empty table with headers" do
+        table = BAMFCSV.parse("column1,column2\nfoo,bar", :headers => true)
+        table.empty?.should be_false
+      end
+
+      it "returns true for an empty table without headers" do
+        table = BAMFCSV.parse("", :headers => false)
+        table.empty?.should be_true
+      end
+
+      it "returns false for a non-empty table without headers" do
+        table = BAMFCSV.parse("foo,bar", :headers => false)
+        table.empty?.should be_false
+      end
+    end
+
     describe "Table::Row#inspect" do
       it "is a Hash" do
         csv = <<CSV
