@@ -74,6 +74,15 @@ describe BAMFCSV do
       BAMFCSV.parse("1\r\n2").should == [["1"],["2"]]
     end
 
+    it "doesn't alter the input" do
+      original = %Q{this,that,"the ""other"" thing"\r\n1,2,3\n}
+      # String#dup, String#clone, and String.new copy the pointer but
+      # share the same underlying buffer, d'oh!
+      input = "" + original
+      BAMFCSV.parse(input)
+      input.should == original
+    end
+
     describe "default CSV module compatibility" do
       it "adds a nil cell after a trailing comma with no newline" do
         BAMFCSV.parse("1,2,").should == [["1","2",nil]]
