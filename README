@@ -23,5 +23,13 @@ irb(1.9.2): table.first["foo"]
 irb(1.9.2): table[1]["bar"]
 ==========> "4"
 
+DOUBLE-AND/ALSO it supports custom field separators!!
+
+irb(1.9.2): BAMFCSV.parse(<<EOF, separator: '|')
+         ?> foo|bar
+         ?> baz|quux
+         ?> EOF
+==========> [["foo", "bar"], ["baz", "quux"]]
+
 
 (*) Results may vary.
