@@ -251,4 +251,48 @@ CSV
       end
     end
   end
+
+  describe "Alternate separators" do
+    it "raises BAMFCSV::InvalidSeparator if :separator is not exactly one character long" do
+      expect { BAMFCSV.parse("1,2", :separator => '') }.should raise_error(BAMFCSV::InvalidSeparator)
+      expect { BAMFCSV.parse("1,2", :separator => 'as') }.should raise_error(BAMFCSV::InvalidSeparator)
+    end
+
+    it "raises BAMFCSV::InvalidSeparator if :separator is a double-quote" do
+      expect { BAMFCSV.parse("1,2", :separator => '"') }.should raise_error(BAMFCSV::InvalidSeparator)
+    end
+
+    it "accepts a single character, non-quote :separator option" do
+      semicolon = BAMFCSV.parse(<<EOS, :separator => ';')
+foo;bar
+1;2
+EOS
+      semicolon.should == [["foo", "bar"], ["1", "2"]]
+      pipe = BAMFCSV.parse(<<EOS, :separator => '|')
+foo|bar
+1|2
+EOS
+      pipe.should == [["foo", "bar"], ["1", "2"]]
+    end
+
+    it "works with tables too" do
+      table = BAMFCSV.parse(<<EOS, :headers => true, :separator => ';')
+foo;bar
+baz;qux
+EOS
+      table.first["foo"].should == "baz"
+      table.first["bar"].should == "qux"
+    end
+
+    it "works with #read" do
+      parsed = BAMFCSV.read("spec/fixtures/pipe-delimited.csv", :separator => "|")
+      parsed.should == [["foo", "bar"], ["pipe", "delimited"]]
+    end
+
+    it "works with #read and tables" do
+      table = BAMFCSV.read("spec/fixtures/pipe-delimited.csv", :headers => true, :separator => "|")
+      table.first["foo"].should == "pipe"
+      table.first["bar"].should == "delimited"
+    end
+  end
 end

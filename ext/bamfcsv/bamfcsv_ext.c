@@ -28,10 +28,11 @@ bool quotes_end_line(char* cur) {
   return *(cur-1) == '"' || (*(cur-1) == '\r' && *(cur-2) == '"');
 }
 
-VALUE bamfcsv_parse_string(VALUE self, VALUE string) {
+VALUE bamfcsv_parse_string(VALUE self, VALUE string, VALUE rstr_sep) {
   char *buf = RSTRING_PTR(string);
   long bufsize = RSTRING_LEN(string);
   rb_encoding *enc = rb_enc_from_index(ENCODING_GET(string));
+  char separator = *RSTRING_PTR(rstr_sep);
 
   unsigned long num_rows = 1, cell_count = 1;
   int quote_count = 0, quotes_matched = 1;
@@ -62,7 +63,7 @@ VALUE bamfcsv_parse_string(VALUE self, VALUE string) {
 
     if (quotes_matched) { 
 
-      if (*cur == ',') {
+      if (*cur == separator) {
         
         if (quote_count && *(cur-1) != '"')
           rb_raise(BAMFCSV_MalformedCSVError_class, "Unclosed quoted field on line %lu, cell %lu.", num_rows, cell_count);
@@ -124,7 +125,7 @@ void Init_bamfcsv() {
 
   BAMFCSV_module = rb_define_module("BAMFCSV");
   VALUE bamfcsv_singleton_class = rb_singleton_class(BAMFCSV_module);
-  rb_define_private_method(bamfcsv_singleton_class, "__parse_string", bamfcsv_parse_string, 1);
+  rb_define_private_method(bamfcsv_singleton_class, "__parse_string", bamfcsv_parse_string, 2);
 
   BAMFCSV_MalformedCSVError_class = rb_define_class_under(BAMFCSV_module, "MalformedCSVError", rb_eRuntimeError);
 }
