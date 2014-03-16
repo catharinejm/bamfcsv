@@ -55,6 +55,10 @@ module BAMFCSV
         @fields[@header_map[key]]
       end
 
+      def []=(key, val)
+        @fields[@header_map[key]] = val
+      end
+
       def inspect
         pairs = []
         headers.each do |h|
