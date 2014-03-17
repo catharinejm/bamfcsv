@@ -48,7 +48,7 @@ module BAMFCSV
       end
 
       def headers
-        @header_map.keys
+        @header_map.to_a.sort{|a,b| a[1] <=> b[1]}.transpose.first
       end
 
       def [](key)
